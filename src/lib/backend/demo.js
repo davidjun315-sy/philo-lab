@@ -384,6 +384,41 @@ export const demoBackend = {
     },
   },
 
+  /**
+   * 백업용: 이 브라우저에 저장된 관리자 수정 내용을 "읽기만" 해서 돌려줍니다. (저장소를 바꾸지 않음)
+   * 예전 저장 키(philolab.demo.v1 등)에 남아 있는 콘텐츠 사본도 함께 찾아 돌려줍니다.
+   * 학생 계정·비밀번호 해시는 포함하지 않습니다.
+   */
+  exportLocal() {
+    const readKey = (k) => {
+      try {
+        return JSON.parse(localStorage.getItem(k) || 'null')
+      } catch {
+        return null
+      }
+    }
+    const current = readKey(KEY) || memory
+    const legacy = {}
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i)
+        if (!k?.startsWith('philolab.demo.') || k === KEY) continue
+        const v = readKey(k)
+        if (v?.content || v?.edits) legacy[k] = { content: v.content || null, edits: v.edits || null, classes: v.classes || [], years: v.years || [] }
+      }
+    } catch {
+      /* 저장소 접근 불가 */
+    }
+    if (current?.content) legacy[`${KEY} (이전 형식)`] = { content: current.content, edits: null, classes: current.classes || [], years: current.years || [] }
+    return {
+      storageKey: KEY,
+      edits: current?.edits || {},
+      classes: current?.classes || [],
+      years: current?.years || [],
+      legacy,
+    }
+  },
+
   /** 데모 데이터를 처음 상태로 되돌리기 */
   async reset() {
     try {

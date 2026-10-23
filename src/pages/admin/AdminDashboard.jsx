@@ -34,9 +34,21 @@ export default function AdminDashboard() {
             지금 만드는 학생·콘텐츠는 이 브라우저에만 저장됩니다. 실제 수업에 쓰려면 README의 <b>Supabase 설정</b>을 마친 뒤 환경변수를 넣고 다시
             배포하세요.
           </p>
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => window.confirm('데모 데이터를 처음 상태로 되돌릴까요?') && backend.reset().then(() => window.location.reload())}>
-            데모 데이터 초기화
-          </button>
+          <div className="admin-callout__actions">
+            <Link to="/admin/backup" className="btn btn--gold btn--sm">
+              💾 수정 내용 백업하기
+            </Link>
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm"
+              onClick={() =>
+                window.prompt('이 브라우저의 데모 데이터(관리자 수정 내용 포함)가 모두 지워집니다. 먼저 백업하세요.\n계속하려면 "초기화"라고 입력하세요.') === '초기화' &&
+                backend.reset().then(() => window.location.reload())
+              }
+            >
+              데모 데이터 초기화
+            </button>
+          </div>
         </div>
       )}
 

@@ -24,6 +24,7 @@ import AdminClasses from './pages/admin/AdminClasses'
 import AdminContent from './pages/admin/AdminContent'
 import AdminClubs from './pages/admin/AdminClubs'
 import AdminVisibility from './pages/admin/AdminVisibility'
+import AdminBackup from './pages/admin/AdminBackup'
 import NotFound from './pages/NotFound'
 
 export default function App() {
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="resources" element={<AdminContent type="resources" />} />
           <Route path="questions" element={<AdminContent type="questions" />} />
           <Route path="visibility" element={<AdminVisibility />} />
+          <Route path="backup" element={<AdminBackup />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
 

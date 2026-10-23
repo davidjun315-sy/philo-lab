@@ -13,6 +13,7 @@ const ADMIN_MENU = [
   { to: '/admin/resources', label: '교사자료 관리', icon: '🗄️' },
   { to: '/admin/questions', label: '오늘의 철학 질문', icon: '❓' },
   { to: '/admin/visibility', label: '공개 범위 관리', icon: '🔐' },
+  { to: '/admin/backup', label: '백업 · 이전', icon: '💾' },
 ]
 
 /** /admin 하위 페이지 공통 레이아웃 (RequireAdmin 으로 감싸져 있음) */
