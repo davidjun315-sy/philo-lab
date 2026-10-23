@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+
+# build output & caches
+dist/
+dist-ssr/
+.vite/
+*.local
+.cache/
+
+# logs
+logs/
+*.log
+npm-debug.log*
+
+# env / personal settings
+.env
+.env.*
+!.env.example
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.claude/
+*.suo
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

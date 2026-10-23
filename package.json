@@ -1,0 +1,21 @@
+{
+  "name": "philo-lab",
+  "private": true,
+  "version": "0.1.0",
+  "description": "PHILO LAB | 생각실험실 — 고등학교 윤리·철학·사회 수업을 위한 통합 플랫폼",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.1.2",
+    "vite": "^8.3.5"
+  }
+}
