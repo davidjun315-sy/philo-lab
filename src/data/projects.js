@@ -4,6 +4,8 @@
  * 상세 경로: #/projects/<id>
  * outputs   : 학생 결과물 { title, author, type, url } — url 이 비어 있으면 "연결 예정"
  * materials : 관련 자료 { title, type, url }
+ * philosophers : 관련 철학자 id — 철학자 상세페이지의 "관련 프로젝트"에 표시
+ * visibility : 공개 범위 (public | students | class | admin)
  */
 
 export const PROJECT_CATEGORIES = ['토론 프로젝트', '사회문제 프로젝트', '생각실험 프로젝트', '융합 프로젝트', '캠페인']
@@ -38,6 +40,7 @@ export const projects = [
       { title: '입론서 양식', type: '양식', url: '' },
     ],
     philosophers: ['kant', 'bentham', 'aristotle'],
+    visibility: 'public',
   },
   {
     id: 'golden-time',
@@ -64,6 +67,7 @@ export const projects = [
     outputs: [],
     materials: [{ title: '생명윤리 4원칙 정리 자료', type: '학습지', url: '' }],
     philosophers: ['kant', 'mill', 'bentham'],
+    visibility: 'public',
   },
   {
     id: 'island-society',
@@ -91,7 +95,6 @@ export const projects = [
     outputs: [],
     materials: [{ title: '상황 카드 세트', type: '활동 자료', url: '' }],
     philosophers: ['plato', 'xunzi', 'laozi'],
+    visibility: 'public',
   },
 ]
-
-export const getProject = (id) => projects.find((p) => p.id === id)

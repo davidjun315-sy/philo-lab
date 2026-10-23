@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
-import { ERAS, REGIONS, philosophers } from '../data/philosophers'
+import { ERAS, REGIONS } from '../data/philosophers'
+import { useContent } from '../context/ContentContext'
 import PageHeader from '../components/PageHeader'
 import FilterChips from '../components/FilterChips'
 import PhilosopherCard from '../components/PhilosopherCard'
 import EmptyState from '../components/EmptyState'
 
 export default function Philosophers() {
+  const { philosophers } = useContent()
   const [region, setRegion] = useState('')
   const [era, setEra] = useState('')
   const [query, setQuery] = useState('')
@@ -18,7 +20,7 @@ export default function Philosophers() {
       if (!q) return true
       return [p.name, p.nameEn, p.school, ...p.keywords].join(' ').toLowerCase().includes(q)
     })
-  }, [region, era, query])
+  }, [philosophers, region, era, query])
 
   return (
     <>

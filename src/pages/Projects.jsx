@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { PROJECT_CATEGORIES, projects } from '../data/projects'
+import { PROJECT_CATEGORIES } from '../data/projects'
+import { useContent } from '../context/ContentContext'
 import PageHeader from '../components/PageHeader'
 import FilterChips from '../components/FilterChips'
 import ProjectCard from '../components/ProjectCard'
@@ -7,6 +8,7 @@ import EmptyState from '../components/EmptyState'
 import Reveal from '../components/Reveal'
 
 export default function Projects() {
+  const { projects } = useContent()
   const [category, setCategory] = useState('')
   const list = category ? projects.filter((p) => p.category === category) : projects
 

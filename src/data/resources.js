@@ -6,9 +6,12 @@
  *   - Google Drive 등 외부 링크를 fileUrl 에 입력하세요.
  *   fileUrl 이 비어 있으면 "파일 연결 예정"으로 표시됩니다.
  *
- * visibility
- *   'public'  : 학생 공개
- *   'teacher' : 교사 전용 (현재는 표시만 구분 — 실제 접근 제한은 로그인 기능 도입 후 적용)
+ * visibility (공개 범위 — Supabase 사용 시 DB 의 Row Level Security 로 실제 접근이 제한됩니다)
+ *   'public'   : 누구나 (게스트 포함)
+ *   'students' : 로그인한 학생
+ *   'class'    : 지정한 학급 학생 (classIds)
+ *   'admin'    : 교사(관리자) 전용
+ * philosophers : 관련 철학자 id — 철학자 상세페이지의 "관련 자료"에 표시
  */
 
 export const RESOURCE_CATEGORIES = [
@@ -23,10 +26,7 @@ export const RESOURCE_CATEGORIES = [
   '수업 성찰',
 ]
 
-export const VISIBILITY = {
-  public: { label: '학생 공개', tone: 'green' },
-  teacher: { label: '교사 전용', tone: 'gold' },
-}
+export { VISIBILITY } from './visibility'
 
 export const resources = [
   {
@@ -36,9 +36,10 @@ export const resources = [
     subject: '윤리와 사상',
     date: '2026.03.20',
     format: 'HWP',
-    visibility: 'teacher',
+    visibility: 'admin',
     fileUrl: '',
     description: '보편화 가능성 테스트를 모둠 활동으로 구성한 2차시 지도안',
+    philosophers: ['kant'],
   },
   {
     id: 'pa-debate',
@@ -50,6 +51,7 @@ export const resources = [
     visibility: 'public',
     fileUrl: '',
     description: '논증의 타당성, 반박의 적절성, 태도 영역 루브릭',
+    philosophers: [],
   },
   {
     id: 'ws-utilitarian',
@@ -58,9 +60,10 @@ export const resources = [
     subject: '윤리와 사상',
     date: '2026.04.10',
     format: 'PDF',
-    visibility: 'public',
+    visibility: 'students',
     fileUrl: '',
     description: '양적·질적 공리주의 비교표와 사례 적용 문제',
+    philosophers: ['bentham', 'mill'],
   },
   {
     id: 'ppt-east',
@@ -72,6 +75,7 @@ export const resources = [
     visibility: 'public',
     fileUrl: '',
     description: '성선설·성악설 비교 및 토론 발문 포함',
+    philosophers: ['mencius', 'xunzi'],
   },
   {
     id: 'exam-midterm',
@@ -83,6 +87,7 @@ export const resources = [
     visibility: 'public',
     fileUrl: '',
     description: '서양 고대~근대 사상가 핵심 개념 요약',
+    philosophers: ['socrates', 'plato', 'aristotle', 'kant', 'bentham', 'mill'],
   },
   {
     id: 'exam-bank',
@@ -91,9 +96,10 @@ export const resources = [
     subject: '윤리와 사상',
     date: '2026.04.15',
     format: 'HWP',
-    visibility: 'teacher',
+    visibility: 'admin',
     fileUrl: '',
     description: '성취기준별 문항 배치 및 난이도',
+    philosophers: [],
   },
   {
     id: 'research-class',
@@ -102,9 +108,10 @@ export const resources = [
     subject: '윤리와 사상',
     date: '2026.06.05',
     format: 'PDF',
-    visibility: 'teacher',
+    visibility: 'admin',
     fileUrl: '',
     description: '철학자 생존게임을 활용한 수업 설계안과 협의록',
+    philosophers: [],
   },
   {
     id: 'open-class',
@@ -116,6 +123,7 @@ export const resources = [
     visibility: 'public',
     fileUrl: '',
     description: '학부모 공개수업 지도안 및 활동 자료',
+    philosophers: [],
   },
   {
     id: 'record-0512',
@@ -124,9 +132,10 @@ export const resources = [
     subject: '윤리와 사상',
     date: '2026.05.12',
     format: '기록',
-    visibility: 'teacher',
+    visibility: 'admin',
     fileUrl: '',
     description: '학생 반응, 선택 비율, 인상적인 발언 기록',
+    philosophers: ['kant', 'bentham'],
   },
   {
     id: 'reflection-1',
@@ -135,8 +144,9 @@ export const resources = [
     subject: '공통',
     date: '2026.07.18',
     format: '글',
-    visibility: 'teacher',
+    visibility: 'admin',
     fileUrl: '',
     description: '게임과 토론 중심 수업의 성과와 개선점',
+    philosophers: [],
   },
 ]

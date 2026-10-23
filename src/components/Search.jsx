@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { searchSite } from '../data/searchIndex'
+import { buildSearchIndex, searchSite } from '../data/searchIndex'
+import { useContent } from '../context/ContentContext'
 
 const SUGGESTIONS = ['칸트', '공리주의', 'AI', '맹자', '실존', '딜레마']
 
@@ -10,12 +11,12 @@ export default function Search({ open, onClose }) {
   const [active, setActive] = useState(0)
   const inputRef = useRef(null)
   const navigate = useNavigate()
-  const results = searchSite(query)
+  const content = useContent()
+  const index = useMemo(() => (open ? buildSearchIndex(content) : []), [open, content])
+  const results = searchSite(index, query)
 
   useEffect(() => {
     if (!open) return
-    setQuery('')
-    setActive(0)
     requestAnimationFrame(() => inputRef.current?.focus())
     document.body.style.overflow = 'hidden'
     return () => {

@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { site } from '../data/site'
-import { dailyQuestions, getTodayQuestionIndex } from '../data/questions'
-import { games } from '../data/games'
-import { subjects } from '../data/classes'
-import { philosophers, getPhilosopher } from '../data/philosophers'
-import { projects } from '../data/projects'
-import { clubLogs } from '../data/clubs'
-import { resources } from '../data/resources'
+import { getTodayQuestionIndex } from '../data/questions'
+import { VISIBILITY } from '../data/visibility'
+import { profileFromResult } from '../data/profile'
+import { useContent } from '../context/ContentContext'
+import { useAuth } from '../context/AuthContext'
+import { useMyRecords } from '../hooks/useMyRecords'
 import HeroArt from '../components/HeroArt'
 import SectionTitle from '../components/SectionTitle'
 import GameCard from '../components/GameCard'
@@ -21,10 +20,15 @@ import Badge from '../components/Badge'
 const FEATURED_PHILOSOPHERS = ['socrates', 'confucius', 'kant', 'mill', 'laozi', 'sartre']
 
 export default function Home() {
-  const [qIndex, setQIndex] = useState(getTodayQuestionIndex)
-  const question = dailyQuestions[qIndex]
+  const { questions, games, subjects, philosophers, projects, clubActivities, resources, getPhilosopher, getClub } = useContent()
+  const { student } = useAuth()
+  const { results } = useMyRecords({ limit: 1 })
+  const [qIndex, setQIndex] = useState(() => getTodayQuestionIndex(questions.length))
+  const question = questions[qIndex % Math.max(questions.length, 1)]
   const arcade = games.filter((g) => g.featured)
-  const latestLog = [...clubLogs].sort((a, b) => b.date.localeCompare(a.date))[0]
+  const latestLog = clubActivities[0]
+  const latestClub = latestLog && getClub(latestLog.clubId)
+  const featuredPhilosophers = FEATURED_PHILOSOPHERS.map(getPhilosopher).filter(Boolean)
 
   const stats = [
     { label: '철학자', value: philosophers.length, to: '/philosophers' },
@@ -75,11 +79,12 @@ export default function Home() {
       {/* 오늘의 철학 질문 + 프로필 */}
       <section className="section section--cream">
         <div className="container home-grid">
+          {question && (
           <Reveal className="question-card">
             <div className="question-card__head">
               <p className="eyebrow eyebrow--gold">TODAY'S QUESTION</p>
               <span className="question-card__no">
-                Q{String(qIndex + 1).padStart(2, '0')} / {String(dailyQuestions.length).padStart(2, '0')}
+                Q{String(qIndex + 1).padStart(2, '0')} / {String(questions.length).padStart(2, '0')}
               </span>
             </div>
             <h2>오늘의 철학 질문</h2>
@@ -87,7 +92,7 @@ export default function Home() {
             {question.hint && <p className="question-card__hint">💡 {question.hint}</p>}
             <div className="question-card__foot">
               <div className="question-card__related">
-                {question.related?.map((id) => {
+                {(question.related || []).map((id) => {
                   const p = getPhilosopher(id)
                   return p ? (
                     <Link key={id} to={`/philosophers/${id}`} className="chip chip--light">
@@ -96,13 +101,14 @@ export default function Home() {
                   ) : null
                 })}
               </div>
-              <button type="button" className="btn btn--outline-light btn--sm" onClick={() => setQIndex((i) => (i + 1) % dailyQuestions.length)}>
+              <button type="button" className="btn btn--outline-light btn--sm" onClick={() => setQIndex((i) => (i + 1) % questions.length)}>
                 다른 질문 ↻
               </button>
             </div>
           </Reveal>
+          )}
           <Reveal delay={120}>
-            <ProfileCard />
+            <ProfileCard profile={student ? profileFromResult(results[0]) : undefined} />
           </Reveal>
         </div>
       </section>
@@ -169,9 +175,9 @@ export default function Home() {
             }
           />
           <div className="grid grid--philo">
-            {FEATURED_PHILOSOPHERS.map((id, i) => (
-              <Reveal key={id} delay={i * 60}>
-                <PhilosopherCard philosopher={getPhilosopher(id)} />
+            {featuredPhilosophers.map((p, i) => (
+              <Reveal key={p.id} delay={i * 60}>
+                <PhilosopherCard philosopher={p} />
               </Reveal>
             ))}
           </div>
@@ -184,19 +190,26 @@ export default function Home() {
           <SectionTitle eyebrow="LAB NOTES" title="탐구와 기록" description="프로젝트, 동아리 활동, 수업 자료가 차곡차곡 쌓이는 곳" />
           <div className="home-trio">
             <Reveal className="home-trio__main">
-              <ProjectCard project={projects[0]} />
+              {projects[0] && <ProjectCard project={projects[0]} />}
               <Link to="/projects" className="more-link">
                 프로젝트 {projects.length}개 모두 보기 →
               </Link>
             </Reveal>
             <Reveal delay={100} className="card mini-log">
               <p className="eyebrow">CLUB LOG</p>
-              <span className="mini-log__date">{latestLog.date}</span>
-              <h3>{latestLog.title}</h3>
-              <p>{latestLog.summary}</p>
-              <div className="mini-log__tags">
-                <Badge tone="green">{latestLog.type}</Badge>
-              </div>
+              {latestLog ? (
+                <>
+                  <span className="mini-log__date">{latestLog.date}</span>
+                  <h3>{latestLog.title}</h3>
+                  <p>{latestLog.description}</p>
+                  <div className="mini-log__tags">
+                    {latestLog.type && <Badge tone="green">{latestLog.type}</Badge>}
+                    {latestClub && <Badge tone="outline">{latestClub.name}</Badge>}
+                  </div>
+                </>
+              ) : (
+                <h3>아직 활동 기록이 없습니다</h3>
+              )}
               <Link to="/club" className="more-link">
                 동아리 활동 기록 →
               </Link>
@@ -208,7 +221,7 @@ export default function Home() {
                 {resources.slice(0, 4).map((r) => (
                   <li key={r.id}>
                     <span>{r.title}</span>
-                    <Badge tone={r.visibility === 'public' ? 'green' : 'gold'}>{r.visibility === 'public' ? '학생 공개' : '교사 전용'}</Badge>
+                    <Badge tone={VISIBILITY[r.visibility]?.tone}>{VISIBILITY[r.visibility]?.short}</Badge>
                   </li>
                 ))}
               </ul>

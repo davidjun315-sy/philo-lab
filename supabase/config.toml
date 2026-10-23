@@ -1,0 +1,7 @@
+# Supabase CLI 설정 (함수 배포용 최소 설정)
+# project_id 는 `supabase link --project-ref <ref>` 실행 시 사용됩니다.
+project_id = "philo-lab"
+
+[functions.admin-students]
+# 함수 내부에서 호출자 토큰과 관리자 역할을 직접 검증합니다.
+verify_jwt = true

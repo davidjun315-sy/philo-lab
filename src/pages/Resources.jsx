@@ -1,26 +1,38 @@
 import { useMemo, useState } from 'react'
-import { RESOURCE_CATEGORIES, VISIBILITY, resources } from '../data/resources'
+import { Link } from 'react-router-dom'
+import { RESOURCE_CATEGORIES } from '../data/resources'
+import { VISIBILITY } from '../data/visibility'
+import { useContent } from '../context/ContentContext'
+import { useAuth } from '../context/AuthContext'
 import PageHeader from '../components/PageHeader'
 import FilterChips from '../components/FilterChips'
 import Badge from '../components/Badge'
 import EmptyState from '../components/EmptyState'
 import { asset } from '../utils/asset'
 
-const VIS_OPTIONS = Object.entries(VISIBILITY).map(([value, v]) => ({ value, label: v.label }))
-
 export default function Resources() {
+  const { resources } = useContent()
+  const { isGuest, isAdmin } = useAuth()
   const [category, setCategory] = useState('')
   const [visibility, setVisibility] = useState('')
+
+  // 실제로 보이는 공개 범위만 필터로 제공 (게스트에게 교사 전용 필터를 보여줄 필요 없음)
+  const visOptions = useMemo(() => {
+    const present = new Set(resources.map((r) => r.visibility))
+    return Object.entries(VISIBILITY)
+      .filter(([v]) => present.has(v))
+      .map(([value, v]) => ({ value, label: v.label }))
+  }, [resources])
 
   const list = useMemo(
     () =>
       resources
         .filter((r) => (!category || r.category === category) && (!visibility || r.visibility === visibility))
-        .sort((a, b) => b.date.localeCompare(a.date)),
-    [category, visibility],
+        .sort((a, b) => (b.date || '').localeCompare(a.date || '')),
+    [resources, category, visibility],
   )
 
-  const counts = useMemo(() => Object.fromEntries(RESOURCE_CATEGORIES.map((c) => [c, resources.filter((r) => r.category === c).length])), [])
+  const counts = useMemo(() => Object.fromEntries(RESOURCE_CATEGORIES.map((c) => [c, resources.filter((r) => r.category === c).length])), [resources])
 
   return (
     <>
@@ -36,12 +48,23 @@ export default function Resources() {
             ))}
           </div>
 
+          {isGuest && (
+            <p className="notice notice--lock">
+              🔒 학생 전용·학급 전용 자료는 <Link to="/login?next=%2Fresources">로그인</Link> 후 볼 수 있습니다. 교사 전용 자료는 관리자만 볼 수 있습니다.
+            </p>
+          )}
+
           <div className="toolbar toolbar--compact">
-            <FilterChips label="공개 범위" options={VIS_OPTIONS} value={visibility} onChange={setVisibility} />
+            {visOptions.length > 1 && <FilterChips label="공개 범위" options={visOptions} value={visibility} onChange={setVisibility} />}
             {category && (
               <button type="button" className="chip" onClick={() => setCategory('')}>
                 {category} ✕
               </button>
+            )}
+            {isAdmin && (
+              <Link to="/admin/resources" className="btn btn--ghost btn--sm">
+                ⚙ 자료 관리
+              </Link>
             )}
           </div>
 
@@ -64,21 +87,25 @@ export default function Resources() {
                   <span role="cell">
                     <Badge tone="outline">{r.category}</Badge>
                   </span>
-                  <span role="cell" className="res-row__muted">{r.subject}</span>
-                  <span role="cell" className="res-row__muted">{r.date}</span>
+                  <span role="cell" className="res-row__muted">
+                    {r.subject}
+                  </span>
+                  <span role="cell" className="res-row__muted">
+                    {r.date}
+                  </span>
                   <span role="cell">
-                    <Badge tone={VISIBILITY[r.visibility].tone}>
-                      {r.visibility === 'teacher' ? '🔒 ' : ''}
-                      {VISIBILITY[r.visibility].label}
+                    <Badge tone={VISIBILITY[r.visibility]?.tone}>
+                      {r.visibility !== 'public' ? '🔒 ' : ''}
+                      {VISIBILITY[r.visibility]?.label}
                     </Badge>
                   </span>
                   <span role="cell">
                     {r.fileUrl ? (
                       <a href={asset(r.fileUrl)} target="_blank" rel="noopener noreferrer" className="file-link">
-                        {r.format} ↓
+                        {r.format || '열기'} ↓
                       </a>
                     ) : (
-                      <span className="file-link is-pending">{r.format} · 연결 예정</span>
+                      <span className="file-link is-pending">{r.format ? `${r.format} · ` : ''}연결 예정</span>
                     )}
                   </span>
                 </div>
@@ -87,12 +114,6 @@ export default function Resources() {
           ) : (
             <EmptyState icon="📂" title="해당 조건의 자료가 아직 없습니다" />
           )}
-
-          <p className="notice">
-            ℹ️ 파일 업로드 기능은 준비 중입니다. <code>public/files/</code>에 파일을 넣고 <code>src/data/resources.js</code>의{' '}
-            <code>fileUrl</code>을 채우면 다운로드 버튼이 활성화됩니다. ‘교사 전용’은 현재 표시용이며, 실제 접근 제한은 로그인 기능 도입 후
-            적용됩니다.
-          </p>
         </div>
       </section>
     </>

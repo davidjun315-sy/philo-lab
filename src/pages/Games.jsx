@@ -1,5 +1,9 @@
 import { useState } from 'react'
-import { GAME_CATEGORIES, games } from '../data/games'
+import { GAME_TYPES } from '../data/games'
+import { profileFromResult } from '../data/profile'
+import { useContent } from '../context/ContentContext'
+import { useAuth } from '../context/AuthContext'
+import { useMyRecords } from '../hooks/useMyRecords'
 import PageHeader from '../components/PageHeader'
 import FilterChips from '../components/FilterChips'
 import GameCard from '../components/GameCard'
@@ -8,15 +12,18 @@ import EmptyState from '../components/EmptyState'
 import Reveal from '../components/Reveal'
 
 export default function Games() {
-  const [category, setCategory] = useState('')
-  const list = category ? games.filter((g) => g.category === category) : games
+  const { games } = useContent()
+  const { student } = useAuth()
+  const { results } = useMyRecords({ limit: 1 })
+  const [type, setType] = useState('')
+  const list = type ? games.filter((g) => g.type === type) : games
 
   return (
     <>
       <PageHeader eyebrow="PHILOSOPHY ARCADE" icon="🎮" title="게임" description="놀면서 배우는 철학, 게임처럼 즐기는 사유의 세계" />
       <section className="section section--dark">
         <div className="container">
-          <FilterChips label="카테고리" options={GAME_CATEGORIES} value={category} onChange={setCategory} />
+          <FilterChips label="카테고리" options={GAME_TYPES} value={type} onChange={setType} />
           {list.length ? (
             <div className="grid grid--games">
               {list.map((g, i) => (
@@ -33,14 +40,14 @@ export default function Games() {
       <section className="section section--cream">
         <div className="container games-profile">
           <div>
-            <p className="eyebrow">COMING SOON</p>
+            <p className="eyebrow">MY PHILOSOPHY PROFILE</p>
             <h2>게임 결과가 나의 프로필이 됩니다</h2>
             <p>
-              심리테스트, 딜레마, 데스매치에서 내린 선택이 모여 나만의 철학 프로필이 완성될 예정입니다. 지금은 UI 데모로 미리
-              만나 보세요.
+              윤리 사상가 심리테스트 결과를 저장하면 나만의 철학 프로필이 만들어집니다. 앞으로 딜레마·데스매치에서 내린 선택도 프로필에 더해질
+              예정입니다.
             </p>
           </div>
-          <ProfileCard />
+          <ProfileCard profile={student ? profileFromResult(results[0]) : undefined} />
         </div>
       </section>
     </>

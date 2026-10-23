@@ -1,6 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
-import { getSubject } from '../data/classes'
-import { getPhilosopher } from '../data/philosophers'
+import { useContent } from '../context/ContentContext'
 import PageHeader from '../components/PageHeader'
 import Breadcrumb from '../components/Breadcrumb'
 import Badge from '../components/Badge'
@@ -9,7 +8,8 @@ import NotFound from './NotFound'
 
 export default function SubjectPage() {
   const { subjectId } = useParams()
-  const subject = getSubject(subjectId)
+  const { subjects, getPhilosopher } = useContent()
+  const subject = subjects.find((s) => s.id === subjectId)
   if (!subject) return <NotFound />
 
   return (
@@ -34,6 +34,7 @@ export default function SubjectPage() {
                         {p && <p className="topic-card__meta">{p.era} · {p.school}</p>}
                         {t.summary && <p className="topic-card__desc">{t.summary}</p>}
                         {p && <p className="topic-card__desc">{p.keywords.slice(0, 3).join(' · ')}</p>}
+                        {t.visibility !== 'public' && <Badge tone="rose">🔒 {t.visibility === 'class' ? '우리 반 전용' : '학생 전용'}</Badge>}
                         {t.questions?.[0] && <p className="topic-card__q">Q. {t.questions[0]}</p>}
                         {t.tools?.length > 0 && (
                           <div className="topic-card__tools">

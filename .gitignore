@@ -28,3 +28,7 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Supabase CLI
+supabase/.temp/
+supabase/.branches/

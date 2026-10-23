@@ -1,8 +1,10 @@
 /**
  * 수업(과목) 데이터
  * ------------------------------------------------------------------
- * subjects → groups → topics 구조입니다.
- * 주제 상세 경로: #/classes/<subjectId>/<topicId>
+ * 아래 subjectSource 는 데모 모드 데이터 + DB(lessons 테이블) 초기값입니다.
+ * 앱에서는 평탄화된 `lessons` (수업 콘텐츠 1개 = 주제 1개) 를 사용하며,
+ * Supabase 사용 시 관리자 페이지 → 수업 관리 에서 추가·수정합니다.
+ * 주제 상세 경로: #/classes/<subjectId>/<lessonId>
  *
  * topic 필드
  *   id, name, summary
@@ -25,7 +27,7 @@ export const LESSON_SECTIONS = [
 
 const thinker = (id, name) => ({ id, name, philosopherId: id })
 
-export const subjects = [
+const subjectSource = [
   {
     id: 'ethics-thought',
     name: '윤리와 사상',
@@ -208,10 +210,46 @@ export const subjects = [
   },
 ]
 
-export const getSubject = (id) => subjects.find((s) => s.id === id)
+/** 과목 정보 (과목 자체는 3개로 고정 — 코드에서 관리) */
+export const subjectMeta = subjectSource.map(({ groups: _groups, ...meta }) => meta)
 
-export const getTopic = (subjectId, topicId) => {
-  const subject = getSubject(subjectId)
+/** 수업 콘텐츠 목록 (DB lessons 테이블과 같은 형태) */
+export const lessons = subjectSource.flatMap((s) =>
+  s.groups.flatMap((g, gi) =>
+    g.topics.map((t, ti) => ({
+      id: t.id,
+      subjectId: s.id,
+      groupTitle: g.title,
+      name: t.name,
+      summary: t.summary || '',
+      philosopherId: t.philosopherId || '',
+      questions: t.questions || [],
+      tools: t.tools || [],
+      sections: t.sections || {},
+      visibility: 'public',
+      classIds: [],
+      sortOrder: gi * 100 + ti,
+    })),
+  ),
+)
+
+/** lessons → 과목 › 그룹 › 주제 구조로 재조립 */
+export const buildSubjects = (lessonList) =>
+  subjectMeta.map((meta) => {
+    const groups = []
+    lessonList
+      .filter((l) => l.subjectId === meta.id)
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      .forEach((l) => {
+        let group = groups.find((g) => g.title === l.groupTitle)
+        if (!group) groups.push((group = { title: l.groupTitle, topics: [] }))
+        group.topics.push(l)
+      })
+    return { ...meta, groups }
+  })
+
+export const findTopic = (subjects, subjectId, topicId) => {
+  const subject = subjects.find((s) => s.id === subjectId)
   if (!subject) return null
   for (const group of subject.groups) {
     const topic = group.topics.find((t) => t.id === topicId)

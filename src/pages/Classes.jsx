@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom'
-import { subjects } from '../data/classes'
+import { useContent } from '../context/ContentContext'
 import PageHeader from '../components/PageHeader'
 import ClassCard from '../components/ClassCard'
 import SectionTitle from '../components/SectionTitle'
 import Reveal from '../components/Reveal'
 
 export default function Classes() {
+  const { subjects } = useContent()
   return (
     <>
       <PageHeader eyebrow="CLASSES" icon="🏛️" title="수업" description="윤리와 사상 · 현대 사회와 윤리 · 통합사회 — 과목을 골라 생각의 여행을 시작하세요." />

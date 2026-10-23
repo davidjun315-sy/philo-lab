@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { LESSON_SECTIONS, getTopic } from '../data/classes'
-import { getPhilosopher } from '../data/philosophers'
-import { getGame } from '../data/games'
+import { LESSON_SECTIONS, findTopic } from '../data/classes'
+import { useContent } from '../context/ContentContext'
+import { useAuth } from '../context/AuthContext'
+import { useMyRecords } from '../hooks/useMyRecords'
 import PageHeader from '../components/PageHeader'
 import Breadcrumb from '../components/Breadcrumb'
 import Badge from '../components/Badge'
@@ -11,21 +13,22 @@ import NotFound from './NotFound'
 
 /**
  * 주제(사상가/쟁점) 상세 페이지.
- * topic.sections 에 내용이 있으면 표시하고, 철학자와 연결된 경우 도감 데이터로 기본 내용을 채웁니다.
+ * lesson.sections 에 내용이 있으면 표시하고, 철학자와 연결된 경우 도감 데이터로 기본 내용을 채웁니다.
  * 내용이 없는 섹션은 "준비 중"으로 표시됩니다.
  */
-const buildSections = (topic, philosopher) => {
+const buildSections = (topic, philosopher, { getPhilosopher, getGame }) => {
   const auto = {}
   if (philosopher) {
     auto.concepts = philosopher.keywords
-    auto.explanation = [philosopher.summary, ...philosopher.ideas]
+    auto.explanation = [philosopher.summary, ...philosopher.ideas].filter(Boolean)
     const related = philosopher.related.map(getPhilosopher).filter(Boolean)
     if (related.length) auto.compare = related.map((r) => ({ to: `/philosophers/${r.id}`, label: `${r.name} — ${r.keywords.slice(0, 2).join(', ')}` }))
     const games = philosopher.games.map(getGame).filter(Boolean)
     if (games.length) auto.game = games.map((g) => ({ to: `/games/${g.id}`, label: `${g.icon} ${g.title}` }))
   }
   if (topic.questions?.length) auto.activity = topic.questions.map((q) => `토론 질문: ${q}`)
-  return { ...auto, ...(topic.sections || {}) }
+  const own = Object.fromEntries(Object.entries(topic.sections || {}).filter(([, v]) => v && (!Array.isArray(v) || v.length)))
+  return { ...auto, ...own }
 }
 
 const SectionBody = ({ content }) => {
@@ -42,13 +45,44 @@ const SectionBody = ({ content }) => {
   )
 }
 
+function CompleteButton({ lessonId }) {
+  const { student, isAdmin, logActivity, promptLogin } = useAuth()
+  const { logs, reload } = useMyRecords({ limit: 200 })
+  const [busy, setBusy] = useState(false)
+  const done = logs.some((l) => l.contentType === 'lesson' && l.contentId === lessonId && l.action === 'complete')
+
+  if (isAdmin) return null
+  const onClick = async () => {
+    if (!student) return promptLogin('학습 완료 기록은 로그인한 학생만 저장할 수 있습니다.')
+    setBusy(true)
+    await logActivity('lesson', lessonId, 'complete')
+    await reload()
+    setBusy(false)
+  }
+  return (
+    <button type="button" className={`btn ${done ? 'btn--done' : 'btn--gold'} btn--sm`} onClick={onClick} disabled={busy || done}>
+      {done ? '✓ 학습 완료' : busy ? '저장 중…' : '학습 완료 표시'}
+    </button>
+  )
+}
+
 export default function TopicPage() {
   const { subjectId, topicId } = useParams()
-  const found = getTopic(subjectId, topicId)
+  const content = useContent()
+  const { student, logActivity } = useAuth()
+  const found = findTopic(content.subjects, subjectId, topicId)
+  const studentId = student?.id
+
+  // 수업 콘텐츠 열람 기록 (학생만, 페이지당 1회)
+  useEffect(() => {
+    if (found && studentId) logActivity('lesson', topicId, 'view')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topicId, studentId])
+
   if (!found) return <NotFound />
   const { subject, group, topic } = found
-  const philosopher = topic.philosopherId ? getPhilosopher(topic.philosopherId) : null
-  const sections = buildSections(topic, philosopher)
+  const philosopher = topic.philosopherId ? content.getPhilosopher(topic.philosopherId) : null
+  const sections = buildSections(topic, philosopher, content)
 
   return (
     <>
@@ -58,11 +92,15 @@ export default function TopicPage() {
         title={topic.name}
         description={philosopher ? philosopher.quote : topic.summary}
       >
-        {philosopher && (
-          <Link to={`/philosophers/${philosopher.id}`} className="btn btn--outline-light btn--sm page-header__btn">
-            철학자 도감에서 보기 →
-          </Link>
-        )}
+        <div className="page-header__meta">
+          {philosopher && (
+            <Link to={`/philosophers/${philosopher.id}`} className="btn btn--outline-light btn--sm">
+              철학자 도감에서 보기 →
+            </Link>
+          )}
+          <CompleteButton lessonId={topic.id} />
+          {topic.visibility !== 'public' && <Badge tone="rose">🔒 {topic.visibility === 'class' ? '우리 반 전용 콘텐츠' : '학생 전용 콘텐츠'}</Badge>}
+        </div>
       </PageHeader>
 
       <section className="section">
@@ -97,7 +135,14 @@ export default function TopicPage() {
 
           <nav className="lesson-nav" aria-label="수업 구조">
             {LESSON_SECTIONS.map((s) => (
-              <a key={s.key} href={`#sec-${s.key}`} onClick={(e) => { e.preventDefault(); document.getElementById(`sec-${s.key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>
+              <a
+                key={s.key}
+                href={`#sec-${s.key}`}
+                onClick={(e) => {
+                  e.preventDefault()
+                  document.getElementById(`sec-${s.key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }}
+              >
                 {s.icon} {s.label}
               </a>
             ))}
@@ -112,7 +157,9 @@ export default function TopicPage() {
                 {s.key === 'concepts' && Array.isArray(sections.concepts) ? (
                   <div className="keyword-list">
                     {sections.concepts.map((k) => (
-                      <span key={k} className="keyword">#{k}</span>
+                      <span key={k} className="keyword">
+                        #{k}
+                      </span>
                     ))}
                   </div>
                 ) : (

@@ -1,5 +1,6 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
+import { RequireAdmin, RequireLogin, RequireStudent } from './components/RouteGuards'
 import Home from './pages/Home'
 import Classes from './pages/Classes'
 import SubjectPage from './pages/SubjectPage'
@@ -12,6 +13,17 @@ import Projects from './pages/Projects'
 import ProjectDetail from './pages/ProjectDetail'
 import Club from './pages/Club'
 import Resources from './pages/Resources'
+import Login from './pages/Login'
+import MyPage from './pages/MyPage'
+import ChangePassword from './pages/ChangePassword'
+import TestResultConnect from './pages/TestResultConnect'
+import AdminLayout from './pages/admin/AdminLayout'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminStudents from './pages/admin/AdminStudents'
+import AdminClasses from './pages/admin/AdminClasses'
+import AdminContent from './pages/admin/AdminContent'
+import AdminClubs from './pages/admin/AdminClubs'
+import AdminVisibility from './pages/admin/AdminVisibility'
 import NotFound from './pages/NotFound'
 
 export default function App() {
@@ -29,7 +41,30 @@ export default function App() {
         <Route path="projects" element={<Projects />} />
         <Route path="projects/:id" element={<ProjectDetail />} />
         <Route path="club" element={<Club />} />
+        <Route path="club/:year" element={<Club />} />
+        <Route path="club/:year/:clubId" element={<Club />} />
         <Route path="resources" element={<Resources />} />
+
+        <Route path="login" element={<Login />} />
+        <Route path="connect/test-result" element={<TestResultConnect />} />
+        <Route path="my" element={<RequireStudent><MyPage /></RequireStudent>} />
+        <Route path="my/password" element={<RequireLogin><ChangePassword /></RequireLogin>} />
+
+        <Route path="admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="students" element={<AdminStudents />} />
+          <Route path="classes" element={<AdminClasses />} />
+          <Route path="lessons" element={<AdminContent type="lessons" />} />
+          <Route path="philosophers" element={<AdminContent type="philosophers" />} />
+          <Route path="games" element={<AdminContent type="games" />} />
+          <Route path="projects" element={<AdminContent type="projects" />} />
+          <Route path="clubs" element={<AdminClubs />} />
+          <Route path="resources" element={<AdminContent type="resources" />} />
+          <Route path="questions" element={<AdminContent type="questions" />} />
+          <Route path="visibility" element={<AdminVisibility />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </Route>
+
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

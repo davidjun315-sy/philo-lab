@@ -1,6 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
-import { getProject } from '../data/projects'
-import { getPhilosopher } from '../data/philosophers'
+import { useContent } from '../context/ContentContext'
 import PageHeader from '../components/PageHeader'
 import Breadcrumb from '../components/Breadcrumb'
 import Badge from '../components/Badge'
@@ -20,6 +19,7 @@ const FileLink = ({ item }) =>
 
 export default function ProjectDetail() {
   const { id } = useParams()
+  const { getProject, getPhilosopher } = useContent()
   const project = getProject(id)
   if (!project) return <NotFound />
   const cast = project.philosophers.map(getPhilosopher).filter(Boolean)
