@@ -64,10 +64,37 @@ const write = (db) => {
   }
 }
 
+/**
+ * 콘텐츠는 "최신 기본 데이터(src/data) + 이 브라우저에서 관리자가 수정한 내용(edits)"으로 계산합니다.
+ * 기본 데이터 전체를 저장해 두면 사이트를 업데이트해도(예: 철학자 이미지 추가) 예전에 방문한 기기에는 반영되지 않기 때문입니다.
+ *   edits[type] = { saved: { [id]: item }, deleted: [id] }
+ */
+const contentList = (d, type) => {
+  const edits = d.edits?.[type] || { saved: {}, deleted: [] }
+  const deleted = new Set(edits.deleted)
+  const seed = seedFor(type).filter((i) => !deleted.has(i.id))
+  const seedIds = new Set(seed.map((i) => i.id))
+  return [...seed.map((i) => edits.saved[i.id] || i), ...Object.values(edits.saved).filter((i) => !seedIds.has(i.id) && !deleted.has(i.id))]
+}
+const editsOf = (d, type) => {
+  d.edits ??= {}
+  return (d.edits[type] ??= { saved: {}, deleted: [] })
+}
+
+/** 예전 형식(콘텐츠 전체 사본 저장) → 수정 내용만 저장하는 형식으로 변환. 계정·기록은 그대로 유지 */
+const upgrade = (data) => {
+  if (data.content && !data.edits) {
+    data.edits = {}
+    delete data.content
+    write(data)
+  }
+  return data
+}
+
 let initPromise = null
 async function db() {
   const existing = read()
-  if (existing) return existing
+  if (existing) return upgrade(existing)
   if (!initPromise) initPromise = createInitialDb()
   return initPromise
 }
@@ -122,8 +149,7 @@ async function createInitialDb() {
     },
   ]
 
-  const content = Object.fromEntries(CONTENT_TYPE_KEYS.map((t) => [t, seedFor(t)]))
-  const data = { version: 1, years, classes, users, students, content, logs, results, session: null }
+  const data = { version: 2, years, classes, users, students, edits: {}, logs, results, session: null }
   write(data)
   return data
 }
@@ -221,24 +247,25 @@ export const demoBackend = {
       const viewer = viewerFor(await getAccount())
       const out = { academicYears: [...data.years].sort((a, b) => b.year - a.year) }
       for (const type of CONTENT_TYPE_KEYS) {
-        out[type] = sortItems(type, (data.content[type] || []).map((i) => withDefaults(type, i)).filter((i) => canView(i, viewer)))
+        out[type] = sortItems(type, contentList(data, type).map((i) => withDefaults(type, i)).filter((i) => canView(i, viewer)))
       }
       return out
     },
     async save(type, item) {
       await mutate((d) => {
-        const list = d.content[type]
-        const idx = list.findIndex((i) => i.id === item.id)
-        if (idx >= 0) list[idx] = item
-        else list.push(item)
+        const edits = editsOf(d, type)
+        edits.saved[item.id] = item
+        edits.deleted = edits.deleted.filter((id) => id !== item.id)
       })
     },
     async remove(type, id) {
       await mutate((d) => {
-        if (type === 'clubs' && d.content.clubActivities.some((a) => a.clubId === id)) {
+        if (type === 'clubs' && contentList(d, 'clubActivities').some((a) => a.clubId === id)) {
           throw new Error('연결된 기록이 있어 삭제할 수 없습니다. 대신 보관 처리하세요.')
         }
-        d.content[type] = d.content[type].filter((i) => i.id !== id)
+        const edits = editsOf(d, type)
+        delete edits.saved[id]
+        if (!edits.deleted.includes(id)) edits.deleted.push(id)
       })
     },
     async upload(file) {
