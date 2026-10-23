@@ -57,8 +57,8 @@ export function AuthProvider({ children }) {
         setAccount(next)
         return next
       },
-      async signInAdmin(email, password) {
-        const next = await backend.auth.signInAdmin(email, password)
+      async signInAdmin(loginId, password) {
+        const next = await backend.auth.signInAdmin(loginId, password)
         setAccount(next)
         return next
       },

@@ -1,9 +1,10 @@
 /**
  * 학생 일괄 등록 CSV 파서
  *   헤더: 학년도,학년,반,번호,학번,이름   (영문 헤더 academic_year,grade,class_number,number,student_number,name 도 허용)
+ *   학번 = 학년도(4) + 학년(1) + 반(2) + 번호(2) 9자리. 학번 열을 비워 두면 자동 생성합니다.
  *   엑셀에서 "CSV UTF-8" 로 저장한 파일을 권장합니다.
  */
-import { validateStudentRow } from './validation'
+import { makeStudentNumber, validateStudentRow } from './validation'
 
 const HEADER_MAP = {
   학년도: 'academicYear',
@@ -19,9 +20,10 @@ const HEADER_MAP = {
   이름: 'name',
   name: 'name',
 }
-const REQUIRED = ['academicYear', 'grade', 'classNumber', 'number', 'studentNumber', 'name']
+// 학번 열은 선택: 비어 있으면 학년도+학년+반+번호로 자동 생성 (예: 202620101)
+const REQUIRED = ['academicYear', 'grade', 'classNumber', 'number', 'name']
 
-export const CSV_TEMPLATE = '학년도,학년,반,번호,학번,이름\n2026,2,1,1,2026020101,김민수\n2026,2,1,2,2026020102,이서준\n'
+export const CSV_TEMPLATE = '학년도,학년,반,번호,학번,이름\n2026,2,1,1,202620101,김민수\n2026,2,1,2,202620102,이서준\n'
 
 /** 따옴표·쉼표를 처리하는 최소 CSV 파서 */
 export const parseCsvText = (text) => {
@@ -67,7 +69,7 @@ export const parseStudentCsv = (text, existingNumbers = new Set()) => {
   if (!table.length) return { headerError: '내용이 비어 있습니다', rows: [] }
   const header = table[0].map((h) => HEADER_MAP[h.trim()] || null)
   const missing = REQUIRED.filter((k) => !header.includes(k))
-  if (missing.length) return { headerError: `필수 열이 없습니다: 학년도,학년,반,번호,학번,이름 형식의 첫 줄이 필요합니다`, rows: [] }
+  if (missing.length) return { headerError: `필수 열이 없습니다: 학년도,학년,반,번호,(학번),이름 형식의 첫 줄이 필요합니다`, rows: [] }
 
   const seen = new Set()
   const rows = table.slice(1).map((cells, i) => {
@@ -80,8 +82,11 @@ export const parseStudentCsv = (text, existingNumbers = new Set()) => {
       grade: Number(obj.grade),
       classNumber: Number(obj.classNumber),
       number: Number(obj.number),
-      studentNumber: obj.studentNumber,
+      studentNumber: obj.studentNumber || '',
       name: obj.name,
+    }
+    if (!data.studentNumber && [data.academicYear, data.grade, data.classNumber, data.number].every(Number.isInteger)) {
+      data.studentNumber = makeStudentNumber(data)
     }
     const errors = validateStudentRow(data).map((f) => `${f} 확인`)
     if (data.studentNumber && seen.has(data.studentNumber)) errors.push('파일 안 중복 학번')

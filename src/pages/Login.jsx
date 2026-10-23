@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { isDemoMode } from '../lib/backend'
 import { DEMO_ACCOUNTS } from '../lib/backend/demo'
-import { validateStudentNumber } from '../lib/validation'
+import { ADMIN_ID_RE, validateStudentNumber } from '../lib/validation'
 import { site } from '../data/site'
 
 /** next 파라미터는 사이트 내부 경로만 허용 (외부 주소로 튕기는 것 방지) */
@@ -13,7 +13,7 @@ export default function Login() {
   const [params] = useSearchParams()
   const [mode, setMode] = useState(params.get('mode') === 'admin' ? 'admin' : 'student')
   const [studentNumber, setStudentNumber] = useState('')
-  const [email, setEmail] = useState('')
+  const [adminId, setAdminId] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -27,15 +27,15 @@ export default function Login() {
     if (mode === 'student') {
       const invalid = validateStudentNumber(studentNumber)
       if (invalid) return setError(invalid)
-    } else if (!/^[^\s@]+@[^\s@]+$/.test(email.trim())) {
-      return setError('이메일 형식을 확인하세요')
+    } else if (!ADMIN_ID_RE.test(adminId.trim().toLowerCase())) {
+      return setError('아이디를 확인하세요 (영문 소문자·숫자 3자 이상)')
     }
     if (!password) return setError('비밀번호를 입력하세요')
 
     setBusy(true)
     try {
       const account =
-        mode === 'student' ? await auth.signInStudent(studentNumber.trim(), password) : await auth.signInAdmin(email.trim(), password)
+        mode === 'student' ? await auth.signInStudent(studentNumber.trim(), password) : await auth.signInAdmin(adminId.trim().toLowerCase(), password)
       setPassword('')
       if (account.mustChangePassword) navigate('/my/password', { replace: true })
       else navigate(next || (account.role === 'admin' ? '/admin' : '/my'), { replace: true })
@@ -55,7 +55,7 @@ export default function Login() {
     setError('')
     if (kind === 'admin') {
       setMode('admin')
-      setEmail(DEMO_ACCOUNTS.admin.email)
+      setAdminId(DEMO_ACCOUNTS.admin.loginId)
       setPassword(DEMO_ACCOUNTS.admin.password)
     } else {
       setMode('student')
@@ -99,15 +99,16 @@ export default function Login() {
                 autoComplete="username"
                 value={studentNumber}
                 onChange={(e) => setStudentNumber(e.target.value.replace(/[^0-9]/g, ''))}
-                placeholder="예: 2026020101"
-                maxLength={12}
+                placeholder="예: 202620101"
+                maxLength={9}
                 required
               />
+              <small>학년도 4자리 + 학번 5자리 (2026학년도 2학년 1반 1번 → 202620101)</small>
             </label>
           ) : (
             <label className="field">
-              <span>이메일</span>
-              <input type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <span>아이디</span>
+              <input autoComplete="username" autoCapitalize="none" spellCheck={false} value={adminId} onChange={(e) => setAdminId(e.target.value)} placeholder="admin" required />
             </label>
           )}
           <label className="field">
@@ -145,7 +146,7 @@ export default function Login() {
                 학생: <code>{DEMO_ACCOUNTS.students[0].studentNumber}</code> / <code>{DEMO_ACCOUNTS.students[0].password}</code>
               </li>
               <li>
-                관리자: <code>{DEMO_ACCOUNTS.admin.email}</code> / <code>{DEMO_ACCOUNTS.admin.password}</code>
+                관리자: <code>{DEMO_ACCOUNTS.admin.loginId}</code> / <code>{DEMO_ACCOUNTS.admin.password}</code>
               </li>
             </ul>
             <div className="demo-box__actions">

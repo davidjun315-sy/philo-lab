@@ -44,15 +44,15 @@ console.log('· seed.sql')
 
 // --- 테스트 사용자 ------------------------------------------------------------
 const one = async (sql, params) => (await db.query(sql, params)).rows[0]
-const adminId = (await one(`insert into auth.users (email) values ('teacher@school.kr') returning id`)).id
-const aId = (await one(`insert into auth.users (email, raw_app_meta_data) values ('2026020101@students.philolab.local', '{"must_change_password": true}') returning id`)).id
-const bId = (await one(`insert into auth.users (email) values ('2026020201@students.philolab.local') returning id`)).id
+const adminId = (await one(`insert into auth.users (email) values ('admin@admin.philolab.local') returning id`)).id
+const aId = (await one(`insert into auth.users (email, raw_app_meta_data) values ('202620101@students.philolab.local', '{"must_change_password": true}') returning id`)).id
+const bId = (await one(`insert into auth.users (email) values ('202620201@students.philolab.local') returning id`)).id
 await db.query(`update public.profiles set role = 'admin' where id = $1`, [adminId])
 
 const class21 = (await one(`select id from public.classes where academic_year = 2026 and grade = 2 and class_number = 1`)).id
 const class22 = (await one(`select id from public.classes where academic_year = 2026 and grade = 2 and class_number = 2`)).id
-const sA = (await one(`insert into public.students (user_id, student_number, name, grade, class_number, number, academic_year) values ($1, '2026020101', '김민수', 2, 1, 1, 2026) returning id`, [aId])).id
-const sB = (await one(`insert into public.students (user_id, student_number, name, grade, class_number, number, academic_year) values ($1, '2026020201', '이서준', 2, 2, 1, 2026) returning id`, [bId])).id
+const sA = (await one(`insert into public.students (user_id, student_number, name, grade, class_number, number, academic_year) values ($1, '202620101', '김민수', 2, 1, 1, 2026) returning id`, [aId])).id
+const sB = (await one(`insert into public.students (user_id, student_number, name, grade, class_number, number, academic_year) values ($1, '202620201', '이서준', 2, 2, 1, 2026) returning id`, [bId])).id
 await db.query(`insert into public.student_classes values ($1, $2), ($3, $4)`, [sA, class21, sB, class22])
 await db.query(`update public.lessons set visibility = 'class', class_ids = array[$1::uuid] where id = 'kant'`, [class21])
 
@@ -99,7 +99,7 @@ await as('authenticated', aId, async () => {
   check('학생A: 교사 전용 자료 숨김', (await count(`select * from public.resources where visibility = 'admin'`)) === 0)
   check('학생A: 자기 반(2-1) 지정 수업 조회', (await count(`select * from public.lessons where id = 'kant'`)) === 1)
   check('학생A: 콘텐츠 수정 불가', await fails(`update public.philosophers set name = 'x' where id = 'kant'`))
-  check('학생A: 학생 명부 추가 불가', await fails(`insert into public.students (student_number, name, grade, class_number, number, academic_year) values ('99999999', 'x', 1, 1, 1, 2026)`))
+  check('학생A: 학생 명부 추가 불가', await fails(`insert into public.students (student_number, name, grade, class_number, number, academic_year) values ('202610199', 'x', 1, 1, 99, 2026)`))
   check('학생A: 내 활동 기록 저장', !(await fails(`insert into public.activity_logs (student_id, content_type, content_id, action) values ($1, 'lesson', 'kant', 'complete')`, [sA])))
   check('학생A: 남의 이름으로 활동 기록 불가', await fails(`insert into public.activity_logs (student_id, content_type, content_id, action) values ($1, 'lesson', 'kant', 'complete')`, [sB]))
   check('학생A: 허용되지 않은 action 거부', await fails(`insert into public.activity_logs (student_id, content_type, content_id, action) values ($1, 'lesson', 'kant', 'hack')`, [sA]))
@@ -127,6 +127,8 @@ await as('authenticated', adminId, async () => {
   check('관리자: 학생 활동 기록 조회', (await count(`select * from public.activity_logs`)) === 1)
   check('관리자: 새 학년도·동아리 추가', !(await fails(`insert into public.academic_years (year, label) values (2027, '2027학년도'); `)) && !(await fails(`insert into public.clubs (id, academic_year, name) values ('2027-philosophy', 2027, '철학 동아리')`)))
   check('관리자: 활동 기록이 있는 동아리는 삭제 불가(보존)', await fails(`delete from public.clubs where id = '2026-philosophy'`))
+  check('관리자: 9자리가 아닌 학번 거부', await fails(`insert into public.students (student_number, name, grade, class_number, number, academic_year) values ('2026020101', '열자리', 2, 1, 1, 2026)`))
+  check('관리자: 9자리 학번 등록', !(await fails(`insert into public.students (student_number, name, grade, class_number, number, academic_year) values ('202620301', '최하늘', 2, 3, 1, 2026)`)))
   check('관리자: 잘못된 외부 URL 거부', await fails(`update public.games set external_url = 'javascript:alert(1)' where id = 'new-game'`))
 })
 

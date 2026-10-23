@@ -42,7 +42,9 @@ function validateRow(r: StudentRow): string | null {
   if (!isInt(r.grade, 1, 3)) return '학년은 1~3 사이여야 합니다'
   if (!isInt(r.class_number, 1, 30)) return '반은 1~30 사이여야 합니다'
   if (!isInt(r.number, 1, 60)) return '번호는 1~60 사이여야 합니다'
-  if (typeof r.student_number !== 'string' || !/^[0-9]{4,12}$/.test(r.student_number)) return '학번은 숫자 4~12자리여야 합니다'
+  if (typeof r.student_number !== 'string' || !/^[0-9]{9}$/.test(r.student_number)) return '학번은 숫자 9자리여야 합니다 (예: 202620101)'
+  const expected = `${r.academic_year}${r.grade}${String(r.class_number).padStart(2, '0')}${String(r.number).padStart(2, '0')}`
+  if (r.student_number !== expected) return `학번이 학년도·학년·반·번호와 맞지 않습니다 (예상 ${expected})`
   if (typeof r.name !== 'string' || r.name.trim().length < 1 || r.name.trim().length > 40) return '이름이 올바르지 않습니다'
   return null
 }

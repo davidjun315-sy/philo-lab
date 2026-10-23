@@ -2,7 +2,7 @@
  * Supabase 백엔드 (실제 인증 + PostgreSQL + Row Level Security)
  * 모든 권한 검사는 DB(RLS)와 Edge Function 에서 다시 수행됩니다.
  */
-import { supabase, studentAuthId } from '../supabase'
+import { adminAuthId, supabase, studentAuthId } from '../supabase'
 import { CONTENT_TYPE_KEYS, contentTypes, fromRow, sortItems, toRow } from '../contentTypes'
 
 const fail = (error, fallback) => {
@@ -48,7 +48,7 @@ async function getAccount() {
   }
   return {
     userId: user.id,
-    email: data.role === 'student' ? null : user.email,
+    loginId: data.role === 'student' ? null : user.email?.split('@')[0],
     role: data.role,
     mustChangePassword: data.must_change_password,
     student: data.student ? mapStudent(data.student) : null,
@@ -89,9 +89,9 @@ export const supabaseBackend = {
       return account
     },
 
-    async signInAdmin(email, password) {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) throw new Error('이메일 또는 비밀번호가 올바르지 않습니다')
+    async signInAdmin(loginId, password) {
+      const { error } = await supabase.auth.signInWithPassword({ email: adminAuthId(loginId), password })
+      if (error) throw new Error('아이디 또는 비밀번호가 올바르지 않습니다')
       const account = await getAccount()
       if (account?.role !== 'admin') {
         await supabase.auth.signOut()

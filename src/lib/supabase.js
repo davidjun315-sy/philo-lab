@@ -21,6 +21,13 @@ export const supabase = isSupabaseConfigured
     })
   : null
 
-/** 학생은 학번으로 로그인하고, 내부적으로만 아래 형식의 인증용 식별자를 사용합니다. (학생에게 노출하지 않음) */
+/**
+ * 학생은 학번, 관리자는 아이디로 로그인합니다.
+ * Supabase Auth 는 이메일 형식 식별자가 필요하므로 내부적으로만 아래 주소로 바꿔 사용합니다. (화면에 노출하지 않음, 메일 발송 없음)
+ *   학생   202620101 → 202620101@students.philolab.local
+ *   관리자 admin     → admin@admin.philolab.local
+ */
 export const STUDENT_EMAIL_DOMAIN = 'students.philolab.local'
+export const ADMIN_EMAIL_DOMAIN = 'admin.philolab.local'
 export const studentAuthId = (studentNumber) => `${studentNumber}@${STUDENT_EMAIL_DOMAIN}`
+export const adminAuthId = (loginId) => `${loginId}@${ADMIN_EMAIL_DOMAIN}`

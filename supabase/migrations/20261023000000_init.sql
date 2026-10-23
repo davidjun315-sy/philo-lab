@@ -55,7 +55,8 @@ create table public.classes (
 create table public.students (
   id uuid primary key default gen_random_uuid(),
   user_id uuid unique references auth.users (id) on delete set null,
-  student_number text not null unique check (student_number ~ '^[0-9]{4,12}$'),
+  -- 학번 9자리 = 학년도(4) + 학년(1) + 반(2) + 번호(2)  예) 202620101
+  student_number text not null unique check (student_number ~ '^[0-9]{9}$'),
   name text not null check (char_length(btrim(name)) between 1 and 40),
   grade int not null check (grade between 1 and 3),
   class_number int not null check (class_number between 1 and 30),

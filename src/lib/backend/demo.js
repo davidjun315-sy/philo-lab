@@ -11,14 +11,14 @@ import { CONTENT_TYPE_KEYS, seedFor, sortItems, withDefaults } from '../contentT
 import { academicYears as seedYears } from '../../data/clubs'
 import { canView } from '../../data/visibility'
 
-const KEY = 'philolab.demo.v1'
+const KEY = 'philolab.demo.v2'
 export const DEMO_ACCOUNTS = {
   students: [
-    { studentNumber: '2026020101', password: 'philo1234', name: '김민수', grade: 2, classNumber: 1, number: 1 },
-    { studentNumber: '2026020102', password: 'philo1234', name: '이서준', grade: 2, classNumber: 1, number: 2 },
-    { studentNumber: '2026020201', password: 'philo1234', name: '박지우', grade: 2, classNumber: 2, number: 1 },
+    { studentNumber: '202620101', password: 'philo1234', name: '김민수', grade: 2, classNumber: 1, number: 1 },
+    { studentNumber: '202620102', password: 'philo1234', name: '이서준', grade: 2, classNumber: 1, number: 2 },
+    { studentNumber: '202620201', password: 'philo1234', name: '박지우', grade: 2, classNumber: 2, number: 1 },
   ],
-  admin: { email: 'admin@philolab.demo', password: 'admin1234' },
+  admin: { loginId: 'admin', password: 'admin1234' },
 }
 
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`)
@@ -97,7 +97,7 @@ async function createInitialDb() {
       classIds: [classOf(s.grade, s.classNumber)],
     })
   }
-  users.push({ id: uid(), role: 'admin', email: DEMO_ACCOUNTS.admin.email, mustChangePassword: false, ...(await makeCredential(DEMO_ACCOUNTS.admin.password)) })
+  users.push({ id: uid(), role: 'admin', loginId: DEMO_ACCOUNTS.admin.loginId, mustChangePassword: false, ...(await makeCredential(DEMO_ACCOUNTS.admin.password)) })
 
   // 김민수 학생의 샘플 기록 (MY PHILO LAB 미리보기)
   const minsu = students[0].id
@@ -147,7 +147,7 @@ async function getAccount() {
   if (student && !student.active) return null
   return {
     userId: user.id,
-    email: user.email || null,
+    loginId: user.loginId || null,
     role: user.role,
     mustChangePassword: user.mustChangePassword,
     student,
@@ -182,11 +182,11 @@ export const demoBackend = {
       return getAccount()
     },
 
-    async signInAdmin(email, password) {
+    async signInAdmin(loginId, password) {
       const data = await db()
-      const user = data.users.find((u) => u.email && u.email === email.trim().toLowerCase())
+      const user = data.users.find((u) => u.loginId && u.loginId === loginId.trim().toLowerCase())
       await delay(250)
-      if (!user || !(await checkCredential(user, password))) throw new Error('이메일 또는 비밀번호가 올바르지 않습니다')
+      if (!user || !(await checkCredential(user, password))) throw new Error('아이디 또는 비밀번호가 올바르지 않습니다')
       if (user.role !== 'admin') throw new Error('관리자 권한이 없는 계정입니다')
       await mutate((d) => (d.session = { userId: user.id }))
       notify()

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { backend, isDemoMode } from '../../lib/backend'
 import { useSchool } from '../../hooks/useSchool'
 import { CSV_TEMPLATE, downloadCsv, parseStudentCsv } from '../../lib/csv'
-import { validatePassword, validateStudentRow } from '../../lib/validation'
+import { makeStudentNumber, validatePassword, validateStudentRow } from '../../lib/validation'
 import Badge from '../../components/Badge'
 
 /**
@@ -217,7 +217,9 @@ const passwordError = (opt) => (opt.mode === 'common' ? validatePassword(opt.val
 
 function SingleStudentForm({ years, onDone, onClose, existing }) {
   const year = years[0] || new Date().getFullYear()
-  const [row, setRow] = useState({ academicYear: year, grade: 1, classNumber: 1, number: 1, studentNumber: '', name: '' })
+  const [fields, setRow] = useState({ academicYear: year, grade: 1, classNumber: 1, number: 1, name: '' })
+  // 학번은 학년도+학년+반+번호로 자동 생성 (예: 202620101)
+  const row = { ...fields, studentNumber: makeStudentNumber(fields) }
   const [pw, setPw] = useState({ mode: 'random' })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -270,8 +272,8 @@ function SingleStudentForm({ years, onDone, onClose, existing }) {
           <input type="number" min={1} max={60} value={row.number} onChange={set('number', true)} />
         </label>
         <label className="field">
-          <span>학번</span>
-          <input inputMode="numeric" value={row.studentNumber} onChange={(e) => setRow((r) => ({ ...r, studentNumber: e.target.value.replace(/[^0-9]/g, '') }))} />
+          <span>학번 (자동)</span>
+          <input value={row.studentNumber} readOnly disabled />
         </label>
         <label className="field">
           <span>이름</span>
